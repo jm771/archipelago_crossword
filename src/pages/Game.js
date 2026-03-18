@@ -10,6 +10,7 @@ import Nav from '../components/common/Nav';
 import {GameModel, getUser, BattleModel} from '../store';
 import HistoryWrapper from '../lib/wrappers/HistoryWrapper';
 import GameComponent from '../components/Game';
+import RandomizerGame from '../components/Randomizer';
 import MobilePanel from '../components/common/MobilePanel';
 import Chat from '../components/Chat';
 import Powerups from '../components/common/Powerups';
@@ -68,6 +69,10 @@ export default class Game extends Component {
 
   get query() {
     return querystring.parse(this.props.location.search.slice(1));
+  }
+
+  get is_randomizer() {
+    return this.query.mode === 'randomizer';
   }
 
   initializeUser() {
@@ -321,6 +326,11 @@ export default class Game extends Component {
   renderGame() {
     if (!this.gameModel || !this.historyWrapper.ready) {
       return;
+    }
+
+    // Render randomizer mode if enabled
+    if (this.is_randomizer) {
+      return <RandomizerGame game={this.game} gid={this.state.gid} />;
     }
 
     const {mobile} = this.state;

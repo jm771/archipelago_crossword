@@ -3,7 +3,7 @@ import _ from 'lodash';
 import Flex from 'react-flexview';
 import {MdRadioButtonUnchecked, MdCheckCircle} from 'react-icons/md';
 import {GiCrossedSwords} from 'react-icons/gi';
-import {Link} from 'react-router-dom';
+import ModeSelectionDialog from './ModeSelectionDialog';
 
 export interface EntryProps {
   info: {
@@ -20,14 +20,25 @@ export interface EntryProps {
   fencing?: boolean;
 }
 
-export default class Entry extends Component<EntryProps> {
-  handleClick = () => {
-    /*
-    this.setState({
-      expanded: !this.state.expanded,
-    });
-    this.props.onPlay(this.props.pid);
-    */
+interface EntryState {
+  dialogOpen: boolean;
+}
+
+export default class Entry extends Component<EntryProps, EntryState> {
+  constructor(props: EntryProps) {
+    super(props);
+    this.state = {
+      dialogOpen: false,
+    };
+  }
+
+  handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    this.setState({dialogOpen: true});
+  };
+
+  handleCloseDialog = () => {
+    this.setState({dialogOpen: false});
   };
 
   handleMouseLeave = () => {};
@@ -49,42 +60,47 @@ export default class Entry extends Component<EntryProps> {
     const numSolves = numSolvesOld + (stats?.numSolves || 0);
     const displayName = _.compact([author.trim(), this.size]).join(' | ');
     return (
-      <Link
-        to={`/beta/play/${pid}${fencing ? '?fencing=1' : ''}`}
-        style={{textDecoration: 'none', color: 'initial'}}
-      >
-        <Flex className="entry" column onClick={this.handleClick} onMouseLeave={this.handleMouseLeave}>
-          <Flex className="entry--top--left">
-            <Flex grow={0}>
-              <p
-                style={{textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
-                title={displayName}
-              >
-                {displayName}
+      <>
+        <div style={{textDecoration: 'none', color: 'initial', cursor: 'pointer'}} onClick={this.handleClick}>
+          <Flex className="entry" column onMouseLeave={this.handleMouseLeave}>
+            <Flex className="entry--top--left">
+              <Flex grow={0}>
+                <p
+                  style={{textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
+                  title={displayName}
+                >
+                  {displayName}
+                </p>
+              </Flex>
+              <Flex>
+                {status === 'started' && <MdRadioButtonUnchecked className="entry--icon" />}
+                {status === 'solved' && <MdCheckCircle className="entry--icon" />}
+                {status !== 'started' && status !== 'solved' && fencing && (
+                  <GiCrossedSwords className="entry--icon fencing" />
+                )}
+              </Flex>
+            </Flex>
+            <Flex className="entry--main">
+              <Flex grow={0}>
+                <p style={{textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}} title={title}>
+                  {title}
+                </p>
+              </Flex>
+            </Flex>
+            <Flex className="entry--details">
+              <p>
+                Solved {numSolves} {numSolves === 1 ? 'time' : 'times'}
               </p>
             </Flex>
-            <Flex>
-              {status === 'started' && <MdRadioButtonUnchecked className="entry--icon" />}
-              {status === 'solved' && <MdCheckCircle className="entry--icon" />}
-              {status !== 'started' && status !== 'solved' && fencing && (
-                <GiCrossedSwords className="entry--icon fencing" />
-              )}
-            </Flex>
           </Flex>
-          <Flex className="entry--main">
-            <Flex grow={0}>
-              <p style={{textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}} title={title}>
-                {title}
-              </p>
-            </Flex>
-          </Flex>
-          <Flex className="entry--details">
-            <p>
-              Solved {numSolves} {numSolves === 1 ? 'time' : 'times'}
-            </p>
-          </Flex>
-        </Flex>
-      </Link>
+        </div>
+        <ModeSelectionDialog
+          open={this.state.dialogOpen}
+          onClose={this.handleCloseDialog}
+          pid={pid}
+          fencing={fencing}
+        />
+      </>
     );
   }
 }

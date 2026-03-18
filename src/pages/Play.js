@@ -48,6 +48,10 @@ export default class Play extends Component {
     return !!this.query.new;
   }
 
+  get is_randomizer() {
+    return this.query.mode === 'randomizer';
+  }
+
   componentDidUpdate() {
     if (this.query.mode === 'battle') {
       return;
@@ -63,7 +67,12 @@ export default class Play extends Component {
     if (shouldAutojoin) {
       const {gid} = games[0];
       const {v2} = games[0];
-      const href = v2 ? (this.is_fencing ? `/fencing/${gid}` : `/beta/game/${gid}`) : `/game/${gid}`;
+      let href = v2 ? (this.is_fencing ? `/fencing/${gid}` : `/beta/game/${gid}`) : `/game/${gid}`;
+
+      // Add randomizer mode to the redirect URL if present
+      if (this.is_randomizer && v2) {
+        href += '?mode=randomizer';
+      }
 
       if (games.length > 1) {
         setTimeout(() => {
@@ -100,7 +109,11 @@ export default class Play extends Component {
         solved: false,
         v2: true,
       });
-      redirect(this.is_fencing ? `/fencing/${gid}` : `/beta/game/${gid}`);
+      let href = this.is_fencing ? `/fencing/${gid}` : `/beta/game/${gid}`;
+      if (this.is_randomizer) {
+        href += '?mode=randomizer';
+      }
+      redirect(href);
     });
   }
 
