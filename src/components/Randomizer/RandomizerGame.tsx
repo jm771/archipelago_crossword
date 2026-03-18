@@ -327,8 +327,8 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
                     {clue.text}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {clue.answer.length} letters{' '}
-                    {attempts > 0 && `• ${attempts} wrong attempt${attempts > 1 ? 's' : ''}`}
+                    {clue.answer.length} letters, {clue.direction}
+                    {attempts > 0 && ` • ${attempts} wrong attempt${attempts > 1 ? 's' : ''}`}
                   </Typography>
 
                   {this.renderAnswerBox(clue)}
