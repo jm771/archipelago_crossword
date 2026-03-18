@@ -52,6 +52,12 @@ const reducers = {
       solved = false,
       themeColor = MAIN_BLUE_3,
       // themeColor = GREENISH,
+      randomizer = {
+        solvedClues: {},
+        revealedLetters: {},
+        wrongAttempts: {},
+        totalWrongAttempts: 0,
+      },
     } = params.game;
     clock.trueTotalTime = 0;
 
@@ -68,6 +74,7 @@ const reducers = {
       cursors,
       users,
       themeColor,
+      randomizer,
       optimisticCounter: 0,
     };
   },
@@ -312,6 +319,50 @@ const reducers = {
     return {
       ...game,
       fencingUsers: _.uniq([...(game.fencingUsers || []), params.id]),
+    };
+  },
+
+  // Randomizer mode events
+  randomizerSubmitAnswer: (game, params) => {
+    const {clueId, isCorrect, revealedLetters} = params;
+    let {randomizer = {}} = game;
+
+    if (isCorrect) {
+      // Mark clue as solved and merge revealed letters
+      const newRevealedLetters = {...(randomizer.revealedLetters || {})};
+
+      // Merge in the new revealed letters for each clue
+      Object.keys(revealedLetters).forEach((targetClueId) => {
+        const existingReveals = newRevealedLetters[targetClueId] || [];
+        const newReveals = revealedLetters[targetClueId] || [];
+        // Combine and deduplicate
+        newRevealedLetters[targetClueId] = _.uniq([...existingReveals, ...newReveals]);
+      });
+
+      randomizer = {
+        ...randomizer,
+        solvedClues: {
+          ...randomizer.solvedClues,
+          [clueId]: true,
+        },
+        revealedLetters: newRevealedLetters,
+      };
+    } else {
+      // Increment wrong attempts
+      const currentAttempts = randomizer.wrongAttempts?.[clueId] || 0;
+      randomizer = {
+        ...randomizer,
+        wrongAttempts: {
+          ...randomizer.wrongAttempts,
+          [clueId]: currentAttempts + 1,
+        },
+        totalWrongAttempts: (randomizer.totalWrongAttempts || 0) + 1,
+      };
+    }
+
+    return {
+      ...game,
+      randomizer,
     };
   },
 };

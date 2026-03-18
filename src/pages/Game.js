@@ -330,7 +330,7 @@ export default class Game extends Component {
 
     // Render randomizer mode if enabled
     if (this.is_randomizer) {
-      return <RandomizerGame game={this.game} gid={this.state.gid} />;
+      return <RandomizerGame game={this.game} gid={this.state.gid} gameModel={this.gameModel} />;
     }
 
     const {mobile} = this.state;

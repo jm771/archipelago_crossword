@@ -51,6 +51,12 @@ export interface GameJson {
   clues: CluesJson;
   circles?: CellIndex[];
   shades?: CellIndex[];
+  randomizer?: {
+    solvedClues: {[clueId: string]: boolean};
+    revealedLetters: {[clueId: string]: number[]};
+    wrongAttempts: {[clueId: string]: number};
+    totalWrongAttempts: number;
+  };
 }
 
 export interface UserJson {

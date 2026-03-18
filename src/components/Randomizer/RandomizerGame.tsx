@@ -30,11 +30,7 @@ interface ClueData {
 interface RandomizerState {
   clues: ClueData[];
   shuffledClues: ClueData[];
-  answers: {[clueId: string]: string}; // User's current answer for each clue
-  solvedClues: Set<string>; // IDs of correctly solved clues
-  revealedLetters: {[clueId: string]: Set<number>}; // Which letter indices are revealed for each clue
-  wrongAttempts: {[clueId: string]: number}; // Count of wrong submissions per clue
-  totalWrongAttempts: number;
+  answers: {[clueId: string]: string}; // User's current answer for each clue (local only)
   feedbackClue: string | null; // Which clue is showing feedback
   feedbackType: 'correct' | 'incorrect' | null;
   rewardAllocations: {[clueId: string]: {clueId: string; letterIndex: number}[]}; // What rewards each clue gives
@@ -43,6 +39,7 @@ interface RandomizerState {
 interface RandomizerGameProps {
   game: GameJson;
   gid: string;
+  gameModel: any; // The GameModel instance for syncing state
 }
 
 export default class RandomizerGame extends Component<RandomizerGameProps, RandomizerState> {
@@ -58,14 +55,22 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
       clues,
       shuffledClues,
       answers: {},
-      solvedClues: new Set(),
-      revealedLetters: {},
-      wrongAttempts: {},
-      totalWrongAttempts: 0,
       feedbackClue: null,
       feedbackType: null,
       rewardAllocations,
     };
+  }
+
+  // Get randomizer state from game (synced across all players)
+  get randomizerState() {
+    return (
+      this.props.game.randomizer || {
+        solvedClues: {},
+        revealedLetters: {},
+        wrongAttempts: {},
+        totalWrongAttempts: 0,
+      }
+    );
   }
 
   // Hash a string to get a consistent seed
@@ -202,34 +207,35 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   };
 
   handleSubmit = (clue: ClueData) => {
-    const {answers, solvedClues, revealedLetters, wrongAttempts, rewardAllocations} = this.state;
+    const {answers, rewardAllocations} = this.state;
     const userAnswer = (answers[clue.id] || '').toUpperCase().trim();
     const correctAnswer = clue.answer.toUpperCase().trim();
 
-    if (solvedClues.has(clue.id)) {
+    const {solvedClues} = this.randomizerState;
+    if (solvedClues[clue.id]) {
       // Already solved, don't process
       return;
     }
 
-    if (userAnswer === correctAnswer) {
-      // Correct answer!
-      const newSolvedClues = new Set(solvedClues);
-      newSolvedClues.add(clue.id);
+    const isCorrect = userAnswer === correctAnswer;
 
-      const newRevealedLetters = {...revealedLetters};
-
-      // Reveal the rewards allocated to this clue
+    if (isCorrect) {
+      // Prepare the revealed letters data
+      const revealedLetters: {[clueId: string]: number[]} = {};
       const rewards = rewardAllocations[clue.id] || [];
+
       rewards.forEach(({clueId, letterIndex}) => {
-        if (!newRevealedLetters[clueId]) {
-          newRevealedLetters[clueId] = new Set();
+        if (!revealedLetters[clueId]) {
+          revealedLetters[clueId] = [];
         }
-        newRevealedLetters[clueId].add(letterIndex);
+        revealedLetters[clueId].push(letterIndex);
       });
 
+      // Submit to game model (syncs to all players)
+      this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
+
+      // Show feedback
       this.setState({
-        solvedClues: newSolvedClues,
-        revealedLetters: newRevealedLetters,
         feedbackClue: clue.id,
         feedbackType: 'correct',
       });
@@ -238,13 +244,11 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
         this.setState({feedbackClue: null, feedbackType: null});
       }, 2000);
     } else {
-      // Wrong answer
-      const newWrongAttempts = {...wrongAttempts};
-      newWrongAttempts[clue.id] = (newWrongAttempts[clue.id] || 0) + 1;
+      // Wrong answer - submit to game model
+      this.props.gameModel.randomizerSubmitAnswer(clue.id, false, {});
 
+      // Show feedback
       this.setState({
-        wrongAttempts: newWrongAttempts,
-        totalWrongAttempts: this.state.totalWrongAttempts + 1,
         feedbackClue: clue.id,
         feedbackType: 'incorrect',
       });
@@ -256,9 +260,10 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   };
 
   renderAnswerBox(clue: ClueData) {
-    const {answers, solvedClues, revealedLetters, feedbackClue, feedbackType} = this.state;
-    const isSolved = solvedClues.has(clue.id);
-    const revealed = revealedLetters[clue.id] || new Set();
+    const {answers, feedbackClue, feedbackType} = this.state;
+    const {solvedClues, revealedLetters} = this.randomizerState;
+    const isSolved = solvedClues[clue.id];
+    const revealed = revealedLetters[clue.id] || [];
     const showFeedback = feedbackClue === clue.id;
 
     const answer = isSolved ? clue.answer : answers[clue.id] || '';
@@ -266,7 +271,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     return (
       <Box className="answer-box">
         {clue.answer.split('').map((letter, index) => {
-          const isRevealed = revealed.has(index);
+          const isRevealed = revealed.includes(index);
           const displayLetter = isSolved || isRevealed ? letter : answer[index] || '';
 
           return (
@@ -292,9 +297,10 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   render() {
-    const {shuffledClues, solvedClues, wrongAttempts, totalWrongAttempts, answers} = this.state;
+    const {shuffledClues, answers} = this.state;
+    const {solvedClues, wrongAttempts, totalWrongAttempts} = this.randomizerState;
     const totalClues = shuffledClues.length;
-    const solvedCount = solvedClues.size;
+    const solvedCount = Object.keys(solvedClues).filter((id) => solvedClues[id]).length;
 
     return (
       <div className="randomizer-game">
@@ -311,7 +317,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
 
         <Box className="clues-container" p={2}>
           {shuffledClues.map((clue) => {
-            const isSolved = solvedClues.has(clue.id);
+            const isSolved = solvedClues[clue.id];
             const attempts = wrongAttempts[clue.id] || 0;
 
             return (

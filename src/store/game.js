@@ -296,6 +296,18 @@ export default class Game extends EventEmitter {
     });
   }
 
+  randomizerSubmitAnswer(clueId, isCorrect, revealedLetters) {
+    this.addEvent({
+      timestamp: SERVER_TIME,
+      type: 'randomizerSubmitAnswer',
+      params: {
+        clueId,
+        isCorrect,
+        revealedLetters,
+      },
+    });
+  }
+
   async initialize(rawGame, {battleData} = {}) {
     console.log('initialize');
     const {
