@@ -3701,6 +3701,11 @@ aproba@^1.1.1:
   resolved "https://registry.yarnpkg.com/aproba/-/aproba-1.2.0.tgz#6802e6264efd18c790a1b0d517f0f2627bf2c94a"
   integrity sha512-Y9J6ZjXtoYh8RnXVCMOU/ttDmk1aBjunq9vO0ta5x85WDQiQfUF9sIPBITdbiiIVcBo03Hi3jMxigBtsddlXRw==
 
+archipelago.js@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/archipelago.js/-/archipelago.js-2.0.4.tgz#ec0a0904986485f1b27e09e3a99c0e171c55fa7a"
+  integrity sha512-Ysb3c+v2DD3tznY49886NJX5vUoPaQckzY2EHVEpBk2uWjIYq52YuXRWBVVlRE0N+VsKuQ4Ihf+bIjrQ9fwucA==
+
 archy@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/archy/-/archy-1.0.0.tgz#f9c8c13757cc1dd7bc379ac77b2c62a5c2868c40"

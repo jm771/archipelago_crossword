@@ -1,8 +1,11 @@
-import React, {Component} from 'react';
+/* eslint-disable max-classes-per-file */
+import React, {Component, useEffect, useRef} from 'react';
 import {GameJson} from '../../shared/types';
 import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core';
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
+import {Client} from 'archipelago.js';
+import {useEffectOnce} from 'react-use';
 
 // Utility function to seed a random number generator
 class SeededRandom {
@@ -42,6 +45,9 @@ interface RandomizerGameProps {
   gameModel: any; // The GameModel instance for syncing state
 }
 
+// Create a new instance of the Client class.
+const client = new Client();
+
 export default class RandomizerGame extends Component<RandomizerGameProps, RandomizerState> {
   constructor(props: RandomizerGameProps) {
     super(props);
@@ -50,6 +56,16 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const rng = new SeededRandom(this.hashString(props.gid));
     const shuffledClues = this.shuffleArray([...clues], rng);
     const rewardAllocations = this.calculateRewardAllocations(clues, rng);
+
+    const clientRef = useRef<Client | null>(null);
+
+    useEffectOnce(() => {
+      clientRef.current = new Client();
+      client
+        .login('localhost:38281', 'Jack')
+        .then(() => console.log('Connected to the Archipelago server!'))
+        .catch(console.error);
+    });
 
     this.state = {
       clues,
