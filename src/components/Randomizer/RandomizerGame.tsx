@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+/* eslint-disable */
 import React, {Component} from 'react';
 import {GameJson} from '../../shared/types';
 import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core';
@@ -85,7 +86,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
       .catch(console.error);
   }
 
-  connectedListener(packet) {
+  connectedListener = (packet: any) => {
     unused(this);
     // apstatus = "AP: Connected";
 
@@ -98,41 +99,36 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     } else {
       console.log('This apworld version should work', packet.slot_data.ap_world_version);
     }
-  }
+  };
 
-  disconnectedListener(packet) {
-    unused(this);
+  disconnectedListener = (packet: any) => {
     unused(packet);
     console.log('disconnected from archipalego');
-  }
+  };
 
-  bouncedListener(packet) {
-    unused(this);
+  bouncedListener = (packet: any) => {
     unused(packet);
     console.log('bounced from archipalego');
-  }
+  };
 
-  receiveditemsListener(items, index) {
+  receiveditemsListener = (items: any, index: number) => {
     console.log('ReceivedItems packet: ', items, index);
-    newItems(items, index);
-  }
+    // newItems(items, index);
+  };
 
   giveReward() {
-    // Prepare the revealed letters data
-    const revealedLetters: {[clueId: string]: number[]} = {};
-
-    // This needs to port to come from arcipelago
-    const rewards = rewardAllocations[clue.id] || [];
-
-    rewards.forEach(({clueId, letterIndex}) => {
-      if (!revealedLetters[clueId]) {
-        revealedLetters[clueId] = [];
-      }
-      revealedLetters[clueId].push(letterIndex);
-    });
-
-    // Submit to game model (syncs to all players)
-    this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
+    // // Prepare the revealed letters data
+    // const revealedLetters: {[clueId: string]: number[]} = {};
+    // // This needs to port to come from arcipelago
+    // const rewards = rewardAllocations[clue.id] || [];
+    // rewards.forEach(({clueId, letterIndex}) => {
+    //   if (!revealedLetters[clueId]) {
+    //     revealedLetters[clueId] = [];
+    //   }
+    //   revealedLetters[clueId].push(letterIndex);
+    // });
+    // // Submit to game model (syncs to all players)
+    // this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
   }
 
   // Get randomizer state from game (synced across all players)
