@@ -87,18 +87,21 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   connectedListener = (packet: any) => {
-    unused(this);
     // apstatus = "AP: Connected";
 
     // window.apseed = packet.slot_data.seed_name;
     // window.slot = packet.slot;
 
-    const apworld = packet.slot_data.ap_world_version;
-    if (!apworld || ['0.0.0'].includes(apworld)) {
-      alert('Wrong apworld version');
-    } else {
-      console.log('This apworld version should work', packet.slot_data.ap_world_version);
-    }
+    console.log(packet);
+
+    // I need to change the python to change this if I want to recieve it
+
+    // const apworld = packet.slot_data.ap_world_version;
+    // if (!apworld || ['0.0.0'].includes(apworld)) {
+    //   alert('Wrong apworld version, expected 0.0.0, got ' + apworld);
+    // } else {
+    //   console.log('This apworld version should work', packet.slot_data.ap_world_version);
+    // }
   };
 
   disconnectedListener = (packet: any) => {
