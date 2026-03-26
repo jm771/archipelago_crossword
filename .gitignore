@@ -1,4 +1,11 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
+.cache/
+.claude.json
+.claude.json.backup
+.claude/
+.config/
+.npm/
+
 
 # npm
 package-lock.json
