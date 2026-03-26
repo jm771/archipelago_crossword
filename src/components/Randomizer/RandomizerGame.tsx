@@ -6,6 +6,8 @@ import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
 
+function unused(thing: any) {}
+
 // Utility function to seed a random number generator
 class SeededRandom {
   private seed: number;
@@ -68,10 +70,69 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   componentDidMount() {
+    const client = this.client;
+    client.items.on('itemsReceived', this.receiveditemsListener);
+    client.socket.on('connected', this.connectedListener);
+    client.socket.on('disconnected', this.disconnectedListener);
+    client.socket.on('bounced', this.bouncedListener);
+
+    // client.messages.on('message', jsonListener);
+    // client.deathLink.on('deathReceived', deathListener);
+
     this.client
       .login('localhost:38281', 'Jack', undefined, undefined)
       .then(() => console.log('Connected to the Archipelago server!'))
       .catch(console.error);
+  }
+
+  connectedListener(packet) {
+    unused(this);
+    // apstatus = "AP: Connected";
+
+    // window.apseed = packet.slot_data.seed_name;
+    // window.slot = packet.slot;
+
+    const apworld = packet.slot_data.ap_world_version;
+    if (!apworld || ['0.0.0'].includes(apworld)) {
+      alert('Wrong apworld version');
+    } else {
+      console.log('This apworld version should work', packet.slot_data.ap_world_version);
+    }
+  }
+
+  disconnectedListener(packet) {
+    unused(this);
+    unused(packet);
+    console.log('disconnected from archipalego');
+  }
+
+  bouncedListener(packet) {
+    unused(this);
+    unused(packet);
+    console.log('bounced from archipalego');
+  }
+
+  receiveditemsListener(items, index) {
+    console.log('ReceivedItems packet: ', items, index);
+    newItems(items, index);
+  }
+
+  giveReward() {
+    // Prepare the revealed letters data
+    const revealedLetters: {[clueId: string]: number[]} = {};
+
+    // This needs to port to come from arcipelago
+    const rewards = rewardAllocations[clue.id] || [];
+
+    rewards.forEach(({clueId, letterIndex}) => {
+      if (!revealedLetters[clueId]) {
+        revealedLetters[clueId] = [];
+      }
+      revealedLetters[clueId].push(letterIndex);
+    });
+
+    // Submit to game model (syncs to all players)
+    this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
   }
 
   // Get randomizer state from game (synced across all players)
@@ -233,20 +294,6 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const isCorrect = userAnswer === correctAnswer;
 
     if (isCorrect) {
-      // Prepare the revealed letters data
-      const revealedLetters: {[clueId: string]: number[]} = {};
-      const rewards = rewardAllocations[clue.id] || [];
-
-      rewards.forEach(({clueId, letterIndex}) => {
-        if (!revealedLetters[clueId]) {
-          revealedLetters[clueId] = [];
-        }
-        revealedLetters[clueId].push(letterIndex);
-      });
-
-      // Submit to game model (syncs to all players)
-      this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
-
       // Show feedback
       this.setState({
         feedbackClue: clue.id,
