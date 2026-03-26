@@ -18,7 +18,6 @@
     "@types/react-router": "^5.1.11",
     "@types/react-router-dom": "^5.1.7",
     "@types/socket.io-client": "^1.4.35",
-    "archipelago.js": "^2.0.4",
     "aws-sdk": "^2.496.0",
     "bluebird": "^3.7.2",
     "body-parser": "^1.19.0",
@@ -70,6 +69,7 @@
   "devDependencies": {
     "@babel/core": "^7.0.0-0",
     "@babel/node": "^7.10.5",
+    "@babel/plugin-proposal-private-methods": "^7.18.6",
     "@babel/preset-env": "^7.11.0",
     "@types/argparse": "^1.0.38",
     "@types/cors": "^2.8.9",
