@@ -355,8 +355,8 @@ const reducers = {
   },
 
   // Randomizer mode events
-  randomizerRevealLetters: (game, params) => {
-    const {revealedLetters} = params;
+  randomizerGetRewards: (game, params) => {
+    const {sequenceNo, nKey, nNonKey} = params;
     let {randomizer = {}} = game;
 
     const newRevealedLetters = {...(randomizer.revealedLetters || {})};

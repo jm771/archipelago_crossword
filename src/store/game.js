@@ -307,12 +307,14 @@ export default class Game extends EventEmitter {
     });
   }
 
-  randomizerRevealLetters(revealedLetters) {
+  randomizerGetRewards(sequenceNo, nKey, nNonKey) {
     this.addEvent({
       timestamp: SERVER_TIME,
-      type: 'randomizerRevealLetters',
+      type: 'randomizerGetRewards',
       params: {
-        revealedLetters,
+        sequenceNo,
+        nKey,
+        nNonKey,
       },
     });
   }

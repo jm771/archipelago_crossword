@@ -9,6 +9,8 @@ import {Client} from '../../archipelago.js';
 
 function unused(thing: any) {}
 
+type RewardLetter = {clueId: string; letterIndex: number};
+
 // Utility function to seed a random number generator
 class SeededRandom {
   private seed: number;
@@ -38,7 +40,7 @@ interface RandomizerState {
   answers: {[clueId: string]: string}; // User's current answer for each clue (local only)
   feedbackClue: string | null; // Which clue is showing feedback
   feedbackType: 'correct' | 'incorrect' | null;
-  rewardAllocations: {[clueId: string]: {clueId: string; letterIndex: number}[]}; // What rewards each clue gives
+  rewardAllocations: RewardLetter[];
 }
 
 interface RandomizerGameProps {
@@ -47,31 +49,44 @@ interface RandomizerGameProps {
   gameModel: any; // The GameModel instance for syncing state
 }
 
-export default class RandomizerGame extends Component<RandomizerGameProps, RandomizerState> {
-  private client: any;
+type RewardsState = {
+  sequenceNo: number;
+  nKey: number;
+  nNonKey: number;
+};
 
-  constructor(props: RandomizerGameProps) {
-    super(props);
-
-    const clues = this.extractClues();
-    const rng = new SeededRandom(this.hashString(props.gid));
-    const shuffledClues = this.shuffleArray([...clues], rng);
-    const rewardAllocations = this.calculateRewardAllocations(clues, rng);
-
-    this.client = new Client(null);
-
-    this.state = {
-      clues,
-      shuffledClues,
-      answers: {},
-      feedbackClue: null,
-      feedbackType: null,
-      rewardAllocations,
-    };
+function UpdateRewards(state: RewardsState, items: any[], index: number): RewardsState | null {
+  if (!items || !items.length) {
+    return state;
   }
 
-  componentDidMount() {
-    const client = this.client;
+  let {sequenceNo, nKey, nNonKey} = state;
+
+  if (index > state.sequenceNo) {
+    alert('Sequence number gap please restart');
+    return null;
+  }
+
+  for (let i = state.sequenceNo - index; i < items.length; i++) {
+    const item = items[i]; // Get the current item
+    if (item.toString() === 'Key Crossword Item') {
+      nKey++;
+    } else if (item.toString() === 'Non-Key Crossword Item') {
+      nNonKey++;
+    }
+  }
+
+  state.sequenceNo = index + items.length;
+
+  return {sequenceNo, nKey, nNonKey};
+}
+
+class ClientHandler {
+  private client: any;
+
+  constructor() {
+    const client = new Client(null);
+
     client.items.on('itemsReceived', this.receiveditemsListener);
     client.socket.on('connected', this.connectedListener);
     client.socket.on('disconnected', this.disconnectedListener);
@@ -80,12 +95,13 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     // client.messages.on('message', jsonListener);
     // client.deathLink.on('deathReceived', deathListener);
 
+    this.client = client;
+
     this.client
       .login('localhost:38281', 'Jack', undefined, undefined)
       .then(() => console.log('Connected to the Archipelago server!'))
       .catch(console.error);
   }
-
   connectedListener = (packet: any) => {
     // apstatus = "AP: Connected";
 
@@ -120,17 +136,6 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   };
 
   giveReward() {
-    // // Prepare the revealed letters data
-    // const revealedLetters: {[clueId: string]: number[]} = {};
-    // // This needs to port to come from arcipelago
-    // const rewards = rewardAllocations[clue.id] || [];
-    // rewards.forEach(({clueId, letterIndex}) => {
-    //   if (!revealedLetters[clueId]) {
-    //     revealedLetters[clueId] = [];
-    //   }
-    //   revealedLetters[clueId].push(letterIndex);
-    // });
-    // // Submit to game model (syncs to all players)
     // this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
   }
 
@@ -142,6 +147,34 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   // The other gets submitted to sendCheck
   // We also need to write logic to map between check IDs and letters
   // At some point we also want / need to decide the "major" reward UI and hook that in
+}
+
+export default class RandomizerGame extends Component<RandomizerGameProps, RandomizerState> {
+  handler: ClientHandler | null;
+
+  constructor(props: RandomizerGameProps) {
+    super(props);
+
+    this.handler = null;
+
+    const clues = this.extractClues();
+    const rng = new SeededRandom(this.hashString(props.gid));
+    const shuffledClues = this.shuffleArray([...clues], rng);
+    const rewardAllocations = this.calculateRewardAllocations(clues, rng);
+
+    this.state = {
+      clues,
+      shuffledClues,
+      answers: {},
+      feedbackClue: null,
+      feedbackType: null,
+      rewardAllocations,
+    };
+  }
+
+  componentDidMount() {
+    this.handler = new ClientHandler();
+  }
 
   // Get randomizer state from game (synced across all players)
   get randomizerState() {
@@ -231,14 +264,9 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   // Calculate which rewards (letter reveals) each clue unlocks
-  calculateRewardAllocations(
-    clues: ClueData[],
-    rng: SeededRandom
-  ): {[clueId: string]: {clueId: string; letterIndex: number}[]} {
-    const allocations: {[clueId: string]: {clueId: string; letterIndex: number}[]} = {};
-
+  calculateRewardAllocations(clues: ClueData[], rng: SeededRandom): RewardLetter[] {
     // Build a list of all possible rewards (each crossed letter)
-    const allRewards: {clueId: string; letterIndex: number}[] = [];
+    const allRewards: RewardLetter[] = [];
 
     clues.forEach((clue) => {
       clue.cells.forEach((cell, index) => {
@@ -256,27 +284,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     });
 
     // Shuffle all rewards
-    const shuffledRewards = this.shuffleArray(allRewards, rng);
-
-    // Allocate rewards to clues based on how many crossed letters they have
-    let rewardIndex = 0;
-    clues.forEach((clue) => {
-      const numCrossedLetters = clue.cells.filter((cell) => {
-        const crossingClue = clues.find((otherClue) => {
-          if (otherClue.direction === clue.direction) return false;
-          return otherClue.cells.some((otherCell) => otherCell.r === cell.r && otherCell.c === cell.c);
-        });
-        return !!crossingClue;
-      }).length;
-
-      allocations[clue.id] = [];
-      for (let i = 0; i < numCrossedLetters && rewardIndex < shuffledRewards.length; i++) {
-        allocations[clue.id].push(shuffledRewards[rewardIndex]);
-        rewardIndex++;
-      }
-    });
-
-    return allocations;
+    return this.shuffleArray(allRewards, rng);
   }
 
   handleAnswerChange = (clueId: string, value: string) => {
