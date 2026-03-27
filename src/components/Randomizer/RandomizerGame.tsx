@@ -134,6 +134,15 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     // this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
   }
 
+  // Next steps
+  // this.props.gameModel.randomizerSubmitAnswer sends something to the web sockets
+  // which also gets consumed and rendered
+  // We probably want to split this two different interfaces
+  // Then one gets hooked up to the on callback
+  // The other gets submitted to sendCheck
+  // We also need to write logic to map between check IDs and letters
+  // At some point we also want / need to decide the "major" reward UI and hook that in
+
   // Get randomizer state from game (synced across all players)
   get randomizerState() {
     return (

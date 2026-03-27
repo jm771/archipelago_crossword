@@ -296,13 +296,22 @@ export default class Game extends EventEmitter {
     });
   }
 
-  randomizerSubmitAnswer(clueId, isCorrect, revealedLetters) {
+  randomizerSubmitAnswer(clueId, isCorrect) {
     this.addEvent({
       timestamp: SERVER_TIME,
       type: 'randomizerSubmitAnswer',
       params: {
         clueId,
         isCorrect,
+      },
+    });
+  }
+
+  randomizerRevealLetters(revealedLetters) {
+    this.addEvent({
+      timestamp: SERVER_TIME,
+      type: 'randomizerRevealLetters',
+      params: {
         revealedLetters,
       },
     });

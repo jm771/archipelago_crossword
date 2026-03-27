@@ -324,28 +324,16 @@ const reducers = {
 
   // Randomizer mode events
   randomizerSubmitAnswer: (game, params) => {
-    const {clueId, isCorrect, revealedLetters} = params;
+    const {clueId, isCorrect} = params;
     let {randomizer = {}} = game;
 
     if (isCorrect) {
-      // Mark clue as solved and merge revealed letters
-      const newRevealedLetters = {...(randomizer.revealedLetters || {})};
-
-      // Merge in the new revealed letters for each clue
-      Object.keys(revealedLetters).forEach((targetClueId) => {
-        const existingReveals = newRevealedLetters[targetClueId] || [];
-        const newReveals = revealedLetters[targetClueId] || [];
-        // Combine and deduplicate
-        newRevealedLetters[targetClueId] = _.uniq([...existingReveals, ...newReveals]);
-      });
-
       randomizer = {
         ...randomizer,
         solvedClues: {
           ...randomizer.solvedClues,
           [clueId]: true,
         },
-        revealedLetters: newRevealedLetters,
       };
     } else {
       // Increment wrong attempts
@@ -359,6 +347,32 @@ const reducers = {
         totalWrongAttempts: (randomizer.totalWrongAttempts || 0) + 1,
       };
     }
+
+    return {
+      ...game,
+      randomizer,
+    };
+  },
+
+  // Randomizer mode events
+  randomizerRevealLetters: (game, params) => {
+    const {revealedLetters} = params;
+    let {randomizer = {}} = game;
+
+    const newRevealedLetters = {...(randomizer.revealedLetters || {})};
+
+    // Merge in the new revealed letters for each clue
+    Object.keys(revealedLetters).forEach((targetClueId) => {
+      const existingReveals = newRevealedLetters[targetClueId] || [];
+      const newReveals = revealedLetters[targetClueId] || [];
+      // Combine and deduplicate
+      newRevealedLetters[targetClueId] = _.uniq([...existingReveals, ...newReveals]);
+    });
+
+    randomizer = {
+      ...randomizer,
+      revealedLetters: newRevealedLetters,
+    };
 
     return {
       ...game,
