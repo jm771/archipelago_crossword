@@ -6,6 +6,7 @@ import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
+import state from 'sweetalert/typings/modules/state';
 
 function unused(thing: any) {}
 
@@ -55,6 +56,11 @@ type RewardsState = {
   nNonKey: number;
 };
 
+type GameModel = {
+  randomizerSubmitAnswer: (clueId: string, isCorrect: boolean) => {};
+  randomizerGetRewards: (state: RewardsState) => {};
+};
+
 function UpdateRewards(state: RewardsState, items: any[], index: number): RewardsState | null {
   if (!items || !items.length) {
     return state;
@@ -83,9 +89,12 @@ function UpdateRewards(state: RewardsState, items: any[], index: number): Reward
 
 class ClientHandler {
   private client: any;
+  private rewardState: RewardsState;
+  private gameUpdateHandler: GameModel;
 
-  constructor() {
+  constructor(gameUpdateHandler: GameModel) {
     const client = new Client(null);
+    this.gameUpdateHandler = gameUpdateHandler;
 
     client.items.on('itemsReceived', this.receiveditemsListener);
     client.socket.on('connected', this.connectedListener);
@@ -96,6 +105,7 @@ class ClientHandler {
     // client.deathLink.on('deathReceived', deathListener);
 
     this.client = client;
+    this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
     this.client
       .login('localhost:38281', 'Jack', undefined, undefined)
@@ -131,13 +141,13 @@ class ClientHandler {
   };
 
   receiveditemsListener = (items: any, index: number) => {
-    console.log('ReceivedItems packet: ', items, index);
-    // newItems(items, index);
+    // console.log('ReceivedItems packet: ', items, index);
+    const newState = UpdateRewards(this.rewardState, items, index);
+    if (newState && newState.sequenceNo > this.rewardState.sequenceNo) {
+      this.rewardState = newState;
+      this.gameUpdateHandler.randomizerGetRewards(newState);
+    }
   };
-
-  giveReward() {
-    // this.props.gameModel.randomizerSubmitAnswer(clue.id, true, revealedLetters);
-  }
 
   // Next steps
   // this.props.gameModel.randomizerSubmitAnswer sends something to the web sockets
@@ -173,7 +183,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   componentDidMount() {
-    this.handler = new ClientHandler();
+    this.handler = new ClientHandler(this.props.gameModel);
   }
 
   // Get randomizer state from game (synced across all players)
@@ -309,30 +319,16 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
 
     const isCorrect = userAnswer === correctAnswer;
 
-    if (isCorrect) {
-      // Show feedback
-      this.setState({
-        feedbackClue: clue.id,
-        feedbackType: 'correct',
-      });
+    this.props.gameModel.randomizerSubmitAnswer(clue.id, isCorrect);
+    // Show feedback
+    this.setState({
+      feedbackClue: clue.id,
+      feedbackType: isCorrect ? 'correct' : 'incorrect',
+    });
 
-      setTimeout(() => {
-        this.setState({feedbackClue: null, feedbackType: null});
-      }, 2000);
-    } else {
-      // Wrong answer - submit to game model
-      this.props.gameModel.randomizerSubmitAnswer(clue.id, false, {});
-
-      // Show feedback
-      this.setState({
-        feedbackClue: clue.id,
-        feedbackType: 'incorrect',
-      });
-
-      setTimeout(() => {
-        this.setState({feedbackClue: null, feedbackType: null});
-      }, 2000);
-    }
+    setTimeout(() => {
+      this.setState({feedbackClue: null, feedbackType: null});
+    }, 2000);
   };
 
   renderAnswerBox(clue: ClueData) {

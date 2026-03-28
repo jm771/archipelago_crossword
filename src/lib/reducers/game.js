@@ -1,6 +1,6 @@
 import {MAX_CLOCK_INCREMENT} from '../timing';
 import {MAIN_BLUE_3} from '../colors';
-import _ from 'lodash';
+import _, {random} from 'lodash';
 
 function getScopeGrid(grid, scope) {
   const scopeGrid = grid.map((row) => row.map(() => false));
@@ -52,11 +52,13 @@ const reducers = {
       solved = false,
       themeColor = MAIN_BLUE_3,
       // themeColor = GREENISH,
+      // HERE JACK HERE
       randomizer = {
         solvedClues: {},
-        revealedLetters: {},
+        rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
         wrongAttempts: {},
         totalWrongAttempts: 0,
+        nLocationsSubmitted: 0,
       },
     } = params.game;
     clock.trueTotalTime = 0;
@@ -325,11 +327,33 @@ const reducers = {
   // Randomizer mode events
   randomizerSubmitAnswer: (game, params) => {
     const {clueId, isCorrect} = params;
-    let {randomizer = {}} = game;
+    let {randomizer = {}, clues} = game;
+    // const { nLocationsSubmitted } = randomizer;
+    const {across, down} = clues;
+    const nClues = across.length + down.length;
+
+    //     randomizer = {
+    //   solvedClues: {},
+    //   rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
+    //   wrongAttempts: {},
+    //   totalWrongAttempts: 0,
+    //   nLocationsSubmitted: 0,
+    // },
 
     if (isCorrect) {
+      const nCorrectClues = Object.keys(randomizer.solvedClues)
+        .map(([, value]) => (value ? 1 : 0))
+        .reduce((a, b) => a + b);
+      const nLocations = Math.floor((100 * nCorrectClues) / nClues);
+
+      // for (let i = nLocationsSubmitted +1; i <= nLocations; i++)
+      // {
+      //   // Do rewards
+      // }
+
       randomizer = {
         ...randomizer,
+        nLocationsSubmitted: nLocations,
         solvedClues: {
           ...randomizer.solvedClues,
           [clueId]: true,
