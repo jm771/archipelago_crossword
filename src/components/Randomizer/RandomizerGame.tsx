@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 /* eslint-disable */
 import React, {Component} from 'react';
-import {GameJson, RewardsState} from '../../shared/types';
+import {GameJson, RandomizerStateJson, RewardsState} from '../../shared/types';
 import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core';
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
@@ -193,26 +193,15 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     }
   }
 
-  // Helper to get previous randomizer state
-  getPrevRandomizerState(prevProps: RandomizerGameProps) {
-    return (
-      prevProps.game.randomizer || {
-        solvedClues: {},
-        revealedLetters: {},
-        wrongAttempts: {},
-        totalWrongAttempts: 0,
-      }
-    );
-  }
-
   // Get randomizer state from game (synced across all players)
-  get randomizerState() {
+  get randomizerState(): RandomizerStateJson {
     return (
       this.props.game.randomizer || {
         solvedClues: {},
-        revealedLetters: {},
+        rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
         wrongAttempts: {},
         totalWrongAttempts: 0,
+        nLocations: 0,
       }
     );
   }
@@ -326,7 +315,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   };
 
   handleSubmit = (clue: ClueData) => {
-    const {answers, rewardAllocations} = this.state;
+    const {answers} = this.state;
     const userAnswer = (answers[clue.id] || '').toUpperCase().trim();
     const correctAnswer = clue.answer.toUpperCase().trim();
 
@@ -350,9 +339,9 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     }, 2000);
   };
 
-  renderAnswerBox(clue: ClueData) {
+  renderAnswerBox(clue: ClueData, revealedLetters: {[clueId: string]: number[]}) {
     const {answers, feedbackClue, feedbackType} = this.state;
-    const {solvedClues, revealedLetters} = this.randomizerState;
+    const {solvedClues} = this.randomizerState;
     const isSolved = solvedClues[clue.id];
     const revealed = revealedLetters[clue.id] || [];
     const showFeedback = feedbackClue === clue.id;
@@ -388,10 +377,23 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   render() {
-    const {shuffledClues, answers} = this.state;
-    const {solvedClues, wrongAttempts, totalWrongAttempts} = this.randomizerState;
+    const {shuffledClues, answers, rewardAllocations} = this.state;
+    const {solvedClues, wrongAttempts, totalWrongAttempts, rewardState} = this.randomizerState;
     const totalClues = shuffledClues.length;
     const solvedCount = Object.keys(solvedClues).filter((id) => solvedClues[id]).length;
+    const {nNonKey} = rewardState;
+
+    let revealedLetters: {[clueId: string]: number[]} = {};
+    const nRecievedLetters = Math.floor((rewardAllocations.length * nNonKey) / 80);
+
+    for (let i = 0; i <= nRecievedLetters; i++) {
+      let {clueId, letterIndex} = rewardAllocations[i];
+      if (!revealedLetters[clueId]) {
+        revealedLetters[clueId] = [];
+      }
+
+      revealedLetters[clueId].push(letterIndex);
+    }
 
     return (
       <div className="randomizer-game">
@@ -422,7 +424,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
                     {attempts > 0 && ` • ${attempts} wrong attempt${attempts > 1 ? 's' : ''}`}
                   </Typography>
 
-                  {this.renderAnswerBox(clue)}
+                  {this.renderAnswerBox(clue, revealedLetters)}
 
                   {!isSolved && (
                     <Box display="flex" style={{marginTop: '16px', gap: '8px'}}>

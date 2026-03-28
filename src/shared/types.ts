@@ -42,6 +42,14 @@ export type RewardsState = {
   nNonKey: number;
 };
 
+export type RandomizerStateJson = {
+  solvedClues: {[clueId: string]: boolean};
+  rewardState: RewardsState;
+  wrongAttempts: {[clueId: string]: number};
+  totalWrongAttempts: number;
+  nLocations: number;
+};
+
 export interface GameJson {
   info: InfoJson;
   grid: GridData;
@@ -57,13 +65,7 @@ export interface GameJson {
   clues: CluesJson;
   circles?: CellIndex[];
   shades?: CellIndex[];
-  randomizer?: {
-    solvedClues: {[clueId: string]: boolean};
-    rewardState: RewardsState;
-    wrongAttempts: {[clueId: string]: number};
-    totalWrongAttempts: number;
-    nLocations: number;
-  };
+  randomizer?: RandomizerStateJson;
 }
 
 export interface UserJson {
