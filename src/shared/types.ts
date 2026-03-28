@@ -36,6 +36,12 @@ export type GridData = CellData[][];
 export type CellIndex = Brand<number, 'CellIndex'>;
 export const toCellIndex = (r: number, c: number, cols: number) => (r * cols + c) as CellIndex;
 
+export type RewardsState = {
+  sequenceNo: number;
+  nKey: number;
+  nNonKey: number;
+};
+
 export interface GameJson {
   info: InfoJson;
   grid: GridData;
@@ -53,9 +59,10 @@ export interface GameJson {
   shades?: CellIndex[];
   randomizer?: {
     solvedClues: {[clueId: string]: boolean};
-    revealedLetters: {[clueId: string]: number[]};
+    rewardState: RewardsState;
     wrongAttempts: {[clueId: string]: number};
     totalWrongAttempts: number;
+    nLocations: number;
   };
 }
 

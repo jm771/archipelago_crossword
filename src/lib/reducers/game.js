@@ -58,7 +58,7 @@ const reducers = {
         rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
         wrongAttempts: {},
         totalWrongAttempts: 0,
-        nLocationsSubmitted: 0,
+        nLocations: 0,
       },
     } = params.game;
     clock.trueTotalTime = 0;
@@ -353,7 +353,7 @@ const reducers = {
 
       randomizer = {
         ...randomizer,
-        nLocationsSubmitted: nLocations,
+        nLocations,
         solvedClues: {
           ...randomizer.solvedClues,
           [clueId]: true,

@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 /* eslint-disable */
 import React, {Component} from 'react';
-import {GameJson} from '../../shared/types';
+import {GameJson, RewardsState} from '../../shared/types';
 import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core';
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
@@ -49,12 +49,6 @@ interface RandomizerGameProps {
   gid: string;
   gameModel: any; // The GameModel instance for syncing state
 }
-
-type RewardsState = {
-  sequenceNo: number;
-  nKey: number;
-  nNonKey: number;
-};
 
 type GameModel = {
   randomizerSubmitAnswer: (clueId: string, isCorrect: boolean) => {};
@@ -149,6 +143,11 @@ class ClientHandler {
     }
   };
 
+  solveClueBundle(i: number) {
+    // this.client.(`Solved some clues ${i}`)
+    this.client.check(i);
+  }
+
   // Next steps
   // this.props.gameModel.randomizerSubmitAnswer sends something to the web sockets
   // which also gets consumed and rendered
@@ -184,6 +183,26 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
 
   componentDidMount() {
     this.handler = new ClientHandler(this.props.gameModel);
+  }
+
+  componentDidUpdate(prevProps: RandomizerGameProps) {
+    const prevLocations = prevProps?.game?.randomizer?.nLocations || 0;
+    const newLocations = this.props?.game?.randomizer?.nLocations || 0;
+    for (let i = prevLocations + 1; i <= newLocations; i++) {
+      this.handler?.solveClueBundle(i);
+    }
+  }
+
+  // Helper to get previous randomizer state
+  getPrevRandomizerState(prevProps: RandomizerGameProps) {
+    return (
+      prevProps.game.randomizer || {
+        solvedClues: {},
+        revealedLetters: {},
+        wrongAttempts: {},
+        totalWrongAttempts: 0,
+      }
+    );
   }
 
   // Get randomizer state from game (synced across all players)

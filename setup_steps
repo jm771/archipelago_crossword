@@ -1,0 +1,4 @@
+nvm use
+source .envrc
+yarn devbackend
+yarn devfrontend
