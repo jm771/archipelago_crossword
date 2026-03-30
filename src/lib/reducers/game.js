@@ -380,28 +380,21 @@ const reducers = {
 
   // Randomizer mode events
   randomizerGetRewards: (game, params) => {
-    const {sequenceNo, nKey, nNonKey} = params;
-    let {randomizer = {}} = game;
+    const {sequenceNo} = params;
 
-    const newRevealedLetters = {...(randomizer.revealedLetters || {})};
+    if (sequenceNo > game.randomizer.sequenceNo) {
+      let {randomizer = {}} = game;
+      randomizer = {
+        ...randomizer,
+        rewardState: params,
+      };
+      return {
+        ...game,
+        randomizer,
+      };
+    }
 
-    // Merge in the new revealed letters for each clue
-    Object.keys(revealedLetters).forEach((targetClueId) => {
-      const existingReveals = newRevealedLetters[targetClueId] || [];
-      const newReveals = revealedLetters[targetClueId] || [];
-      // Combine and deduplicate
-      newRevealedLetters[targetClueId] = _.uniq([...existingReveals, ...newReveals]);
-    });
-
-    randomizer = {
-      ...randomizer,
-      revealedLetters: newRevealedLetters,
-    };
-
-    return {
-      ...game,
-      randomizer,
-    };
+    return game;
   },
 };
 

@@ -6,7 +6,6 @@ import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
-import state from 'sweetalert/typings/modules/state';
 
 function unused(thing: any) {}
 
