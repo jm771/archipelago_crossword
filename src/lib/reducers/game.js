@@ -343,7 +343,7 @@ const reducers = {
     if (isCorrect) {
       const nCorrectClues = Object.keys(randomizer.solvedClues)
         .map(([, value]) => (value ? 1 : 0))
-        .reduce((a, b) => a + b);
+        .reduce((a, b) => a + b, 0);
       const nLocations = Math.floor((100 * nCorrectClues) / nClues);
 
       // for (let i = nLocationsSubmitted +1; i <= nLocations; i++)
@@ -380,9 +380,14 @@ const reducers = {
 
   // Randomizer mode events
   randomizerGetRewards: (game, params) => {
+    console.log(
+      `Processing websocket event - got rewards ${JSON.stringify(params)}, game is ${JSON.stringify(
+        game.randomizer.rewardState
+      )}`
+    );
     const {sequenceNo} = params;
 
-    if (sequenceNo > game.randomizer.sequenceNo) {
+    if (sequenceNo > game.randomizer.rewardState.sequenceNo) {
       let {randomizer = {}} = game;
       randomizer = {
         ...randomizer,

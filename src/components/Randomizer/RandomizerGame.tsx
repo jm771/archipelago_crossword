@@ -68,6 +68,7 @@ function UpdateRewards(state: RewardsState, items: any[], index: number): Reward
 
   for (let i = state.sequenceNo - index; i < items.length; i++) {
     const item = items[i]; // Get the current item
+    console.log(`Got item: ${item.toString()}`);
     if (item.toString() === 'Key Crossword Item') {
       nKey++;
     } else if (item.toString() === 'Non-Key Crossword Item') {
@@ -75,7 +76,7 @@ function UpdateRewards(state: RewardsState, items: any[], index: number): Reward
     }
   }
 
-  state.sequenceNo = index + items.length;
+  sequenceNo = index + items.length;
 
   return {sequenceNo, nKey, nNonKey};
 }
@@ -84,6 +85,8 @@ class ClientHandler {
   private client: any;
   private rewardState: RewardsState;
   private gameUpdateHandler: GameModel;
+  private connected: boolean;
+  private onConnectItemUnlock: number;
 
   constructor(gameUpdateHandler: GameModel) {
     const client = new Client(null);
@@ -98,11 +101,19 @@ class ClientHandler {
     // client.deathLink.on('deathReceived', deathListener);
 
     this.client = client;
+    this.connected = false;
+    this.onConnectItemUnlock = 0;
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
     this.client
       .login('localhost:38281', 'Jack', undefined, undefined)
-      .then(() => console.log('Connected to the Archipelago server!'))
+      .then(() => {
+        console.log('Connected to the Archipelago server!');
+        this.connected = true;
+        if (this.onConnectItemUnlock) {
+          this.solveClueBundle(this.onConnectItemUnlock);
+        }
+      })
       .catch(console.error);
   }
   connectedListener = (packet: any) => {
@@ -134,9 +145,11 @@ class ClientHandler {
   };
 
   receiveditemsListener = (items: any, index: number) => {
-    // console.log('ReceivedItems packet: ', items, index);
+    console.log('ReceivedItems packet: ', items, index);
     const newState = UpdateRewards(this.rewardState, items, index);
+
     if (newState && newState.sequenceNo > this.rewardState.sequenceNo) {
+      console.log(`New State ${JSON.stringify(newState)}`);
       this.rewardState = newState;
       this.gameUpdateHandler.randomizerGetRewards(newState);
     }
@@ -144,7 +157,12 @@ class ClientHandler {
 
   solveClueBundle(i: number) {
     // this.client.(`Solved some clues ${i}`)
-    this.client.check(i);
+    if (this.connected) {
+      console.log(`sending check ${i}`);
+      this.client.check(i);
+    } else {
+      this.onConnectItemUnlock = Math.max(this.onConnectItemUnlock, i);
+    }
   }
 
   // Next steps
@@ -378,6 +396,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   render() {
     const {shuffledClues, answers, rewardAllocations} = this.state;
     const {solvedClues, wrongAttempts, totalWrongAttempts, rewardState} = this.randomizerState;
+    console.log(`Rendering with rewardState=${JSON.stringify(rewardState)}`);
     const totalClues = shuffledClues.length;
     const solvedCount = Object.keys(solvedClues).filter((id) => solvedClues[id]).length;
     const {nNonKey} = rewardState;

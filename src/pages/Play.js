@@ -58,7 +58,8 @@ export default class Play extends Component {
     }
 
     const {games} = this;
-    const shouldAutocreate = !this.state.creating && (!games || (games && games.length === 0) || this.is_new);
+    const shouldAutocreate =
+      !this.state.creating && (!games || (games && games.length === 0) || this.is_new || this.is_randomizer);
     if (shouldAutocreate) {
       this.create();
       return;
