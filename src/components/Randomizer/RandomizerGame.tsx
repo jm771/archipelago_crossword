@@ -6,6 +6,7 @@ import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
+import {N_LOCATIONS} from '../../../randomizer_config.js';
 
 function unused(thing: any) {}
 
@@ -105,6 +106,8 @@ class ClientHandler {
     this.onConnectItemUnlock = 0;
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
+    // TODO config
+
     this.client
       .login('localhost:38281', 'Jack', 'Crossword', undefined)
       .then(() => {
@@ -156,11 +159,13 @@ class ClientHandler {
   };
 
   solveClueBundle(i: number) {
-    // this.client.(`Solved some clues ${i}`)
     if (this.connected) {
       console.log(`sending check ${i}`);
       this.client.check(i);
-      if (i >= 100) {
+
+      //TODO config
+
+      if (i >= N_LOCATIONS) {
         this.client.goal();
       }
     } else {
@@ -411,6 +416,13 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   render() {
+    // TODO - config?
+    const N_KEY_ITEMS = 20;
+    const N_NON_KEY_ITEMS = 80;
+    const MIN_STARTING_CLUES = 4;
+    const STARTING_CLUES_PROPORTION = 0.1;
+    const N_KEY_FOR_ALL_REVEAL_PROPORTION = 0.9;
+
     const {shuffledClues, answers, rewardAllocations} = this.state;
     const {solvedClues, wrongAttempts, totalWrongAttempts, rewardState} = this.randomizerState;
     console.log(`Rendering with rewardState=${JSON.stringify(rewardState)}`);
@@ -418,11 +430,13 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const solvedCount = Object.keys(solvedClues).filter((id) => solvedClues[id]).length;
     const {nNonKey, nKey} = rewardState;
 
-    const freebies = Math.max(4, Math.ceil(totalClues * 0.1));
-    const nRevealed = freebies + Math.floor(((totalClues - freebies) * nKey) / (20 * 0.9));
+    const freebies = Math.max(MIN_STARTING_CLUES, Math.ceil(totalClues * STARTING_CLUES_PROPORTION));
+    const nRevealed =
+      freebies +
+      Math.floor(((totalClues - freebies) * nKey) / (N_KEY_ITEMS * N_KEY_FOR_ALL_REVEAL_PROPORTION));
 
     let revealedLetters: {[clueId: string]: number[]} = {};
-    const nRecievedLetters = Math.floor((rewardAllocations.length * nNonKey) / 80);
+    const nRecievedLetters = Math.floor((rewardAllocations.length * nNonKey) / N_NON_KEY_ITEMS);
 
     for (let i = 0; i < nRecievedLetters; i++) {
       let {clueId, letterIndex} = rewardAllocations[i];
