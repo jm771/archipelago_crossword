@@ -359,6 +359,29 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     }, 2000);
   };
 
+  handleForceSolve = (clue: ClueData) => {
+    const {solvedClues} = this.randomizerState;
+    if (solvedClues[clue.id]) {
+      // Already solved, don't process
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to force solve this clue?`);
+
+    if (confirmed) {
+      this.props.gameModel.randomizerSubmitAnswer(clue.id, true);
+      // Show feedback
+      this.setState({
+        feedbackClue: clue.id,
+        feedbackType: 'correct',
+      });
+
+      setTimeout(() => {
+        this.setState({feedbackClue: null, feedbackType: null});
+      }, 2000);
+    }
+  };
+
   renderAnswerBox(clue: ClueData, revealedLetters: {[clueId: string]: number[]}) {
     const {answers, feedbackClue, feedbackType} = this.state;
     const {solvedClues} = this.randomizerState;
@@ -410,7 +433,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     let revealedLetters: {[clueId: string]: number[]} = {};
     const nRecievedLetters = Math.floor((rewardAllocations.length * nNonKey) / 80);
 
-    for (let i = 0; i <= nRecievedLetters; i++) {
+    for (let i = 0; i < nRecievedLetters; i++) {
       let {clueId, letterIndex} = rewardAllocations[i];
       if (!revealedLetters[clueId]) {
         revealedLetters[clueId] = [];
@@ -485,6 +508,15 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
                         disabled={isSolved || !answers[clue.id]}
                       >
                         Submit
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => this.handleForceSolve(clue)}
+                        disabled={isSolved}
+                      >
+                        Force
                       </Button>
                     </Box>
                   )}

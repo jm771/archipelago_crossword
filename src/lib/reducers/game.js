@@ -330,34 +330,25 @@ const reducers = {
     let {randomizer = {}, clues} = game;
     // const { nLocationsSubmitted } = randomizer;
     const {across, down} = clues;
-    const nClues = across.length + down.length;
-
-    //     randomizer = {
-    //   solvedClues: {},
-    //   rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
-    //   wrongAttempts: {},
-    //   totalWrongAttempts: 0,
-    //   nLocationsSubmitted: 0,
-    // },
+    const nClues = across.filter((x) => x).length + down.filter((x) => x).length;
 
     if (isCorrect) {
-      const nCorrectClues = Object.keys(randomizer.solvedClues)
+      const solvedClues = {
+        ...randomizer.solvedClues,
+        [clueId]: true,
+      };
+
+      const nCorrectClues = Object.keys(solvedClues)
         .map(([, value]) => (value ? 1 : 0))
         .reduce((a, b) => a + b, 0);
-      const nLocations = Math.floor((100 * nCorrectClues) / nClues);
 
-      // for (let i = nLocationsSubmitted +1; i <= nLocations; i++)
-      // {
-      //   // Do rewards
-      // }
+      const nLocations = Math.floor((100 * nCorrectClues) / nClues);
+      console.log(nLocations, nCorrectClues, nClues);
 
       randomizer = {
         ...randomizer,
         nLocations,
-        solvedClues: {
-          ...randomizer.solvedClues,
-          [clueId]: true,
-        },
+        solvedClues,
       };
     } else {
       // Increment wrong attempts
