@@ -106,7 +106,7 @@ class ClientHandler {
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
     this.client
-      .login('localhost:38281', 'Jack', undefined, undefined)
+      .login('localhost:38281', 'Jack', 'Crossword', undefined)
       .then(() => {
         console.log('Connected to the Archipelago server!');
         this.connected = true;
@@ -160,6 +160,9 @@ class ClientHandler {
     if (this.connected) {
       console.log(`sending check ${i}`);
       this.client.check(i);
+      if (i >= 100) {
+        this.client.goal();
+      }
     } else {
       this.onConnectItemUnlock = Math.max(this.onConnectItemUnlock, i);
     }
@@ -399,7 +402,10 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     console.log(`Rendering with rewardState=${JSON.stringify(rewardState)}`);
     const totalClues = shuffledClues.length;
     const solvedCount = Object.keys(solvedClues).filter((id) => solvedClues[id]).length;
-    const {nNonKey} = rewardState;
+    const {nNonKey, nKey} = rewardState;
+
+    const freebies = Math.max(4, Math.ceil(totalClues * 0.1));
+    const nRevealed = freebies + Math.floor(((totalClues - freebies) * nKey) / (20 * 0.9));
 
     let revealedLetters: {[clueId: string]: number[]} = {};
     const nRecievedLetters = Math.floor((rewardAllocations.length * nNonKey) / 80);
@@ -427,18 +433,30 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
         </Box>
 
         <Box className="clues-container" p={2}>
-          {shuffledClues.map((clue) => {
+          {shuffledClues.map((clue, index) => {
             const isSolved = solvedClues[clue.id];
             const attempts = wrongAttempts[clue.id] || 0;
+            const isRevealed = index < nRevealed;
+            const clasified = '█';
+            const halfLength = clue.text.length >> 1;
+            const censoredClue = isRevealed
+              ? clue.text
+              : clue.text.substring(0, halfLength) + clasified.repeat((clue.text.length - halfLength) >> 1);
 
             return (
               <Paper key={clue.id} className="clue-card" elevation={2}>
                 <Box p={2}>
                   <Typography variant="body1" className="clue-text">
-                    {clue.text}
+                    {censoredClue}
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {clue.answer.length} letters, {clue.direction}
+                    {isRevealed && (
+                      <>
+                        {' '}
+                        {clue.direction}
+                        {' clue'}
+                      </>
+                    )}
                     {attempts > 0 && ` • ${attempts} wrong attempt${attempts > 1 ? 's' : ''}`}
                   </Typography>
 
