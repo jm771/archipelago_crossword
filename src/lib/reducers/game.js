@@ -52,7 +52,6 @@ const reducers = {
       solved = false,
       themeColor = MAIN_BLUE_3,
       // themeColor = GREENISH,
-      // HERE JACK HERE
       randomizer = {
         solvedClues: {},
         rewardState: {sequenceNo: 0, nKey: 0, nNonKey: 0},
@@ -317,7 +316,6 @@ const reducers = {
     isFencing: true,
   }),
   updateTeamId: (game, params) => {
-    console.log(params);
     return {
       ...game,
       fencingUsers: _.uniq([...(game.fencingUsers || []), params.id]),
@@ -343,7 +341,6 @@ const reducers = {
         .reduce((a, b) => a + b, 0);
 
       const nLocations = Math.floor((100 * nCorrectClues) / nClues);
-      console.log(nLocations, nCorrectClues, nClues);
 
       randomizer = {
         ...randomizer,

@@ -2237,9 +2237,7 @@ var Client = class {
     if (!this.authenticated) {
       throw new UnauthenticatedError('Cannot check locations while not connected and authenticated.');
     }
-    console.log(JSON.stringify(this.room.missingLocations));
     locations = locations.filter((location) => this.room.missingLocations.includes(location));
-    console.log(locations);
     this.socket.send({cmd: 'LocationChecks', locations});
   }
   /**
