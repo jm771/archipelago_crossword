@@ -1,7 +1,6 @@
 import {MAX_CLOCK_INCREMENT} from '../timing';
 import {MAIN_BLUE_3} from '../colors';
 import _, {random} from 'lodash';
-import {N_LOCATIONS} from '../../../randomizer_config';
 
 function getScopeGrid(grid, scope) {
   const scopeGrid = grid.map((row) => row.map(() => false));
@@ -340,7 +339,8 @@ const reducers = {
         .map(([, value]) => (value ? 1 : 0))
         .reduce((a, b) => a + b, 0);
 
-      N_LOCATIONS = 100;
+      //TODO config
+      const N_LOCATIONS = 100;
 
       const nLocations = Math.floor((N_LOCATIONS * nCorrectClues) / nClues);
 

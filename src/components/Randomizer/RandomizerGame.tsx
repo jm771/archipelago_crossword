@@ -6,7 +6,6 @@ import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core
 import {MdCheckCircle, MdCancel} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
-import {N_LOCATIONS} from '../../../randomizer_config.js';
 
 function unused(thing: any) {}
 
@@ -106,10 +105,12 @@ class ClientHandler {
     this.onConnectItemUnlock = 0;
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
-    // TODO config
+    //TODO config
+    const SLOT_NAME = 'Jack';
+    const ARCHIPELAGO_URL = 'localhost:38281';
 
     this.client
-      .login('localhost:38281', 'Jack', 'Crossword', undefined)
+      .login(ARCHIPELAGO_URL, SLOT_NAME, 'Crossword', undefined)
       .then(() => {
         console.log('Connected to the Archipelago server!');
         this.connected = true;
@@ -164,6 +165,7 @@ class ClientHandler {
       this.client.check(i);
 
       //TODO config
+      const N_LOCATIONS = 100;
 
       if (i >= N_LOCATIONS) {
         this.client.goal();
@@ -416,7 +418,7 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   render() {
-    // TODO - config?
+    //TODO config
     const N_KEY_ITEMS = 20;
     const N_NON_KEY_ITEMS = 80;
     const MIN_STARTING_CLUES = 4;
