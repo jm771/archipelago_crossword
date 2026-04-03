@@ -1,11 +1,12 @@
 /* eslint-disable max-classes-per-file */
 /* eslint-disable */
 import React, {Component} from 'react';
-import {GameJson, RandomizerStateJson, RewardsState} from '../../shared/types';
+import {GameJson, RandomizerStateJson, RewardsState, RandomizerConfigJson} from '../../shared/types';
 import {Paper, TextField, Button, Typography, Box, Chip} from '@material-ui/core';
-import {MdCheckCircle, MdCancel} from 'react-icons/md';
+import {MdCheckCircle, MdCancel, MdSettings} from 'react-icons/md';
 import './RandomizerGame.css';
 import {Client} from '../../archipelago.js';
+import RandomizerConfig, {RandomizerConfigState, DEFAULT_RANDOMIZER_CONFIG} from './RandomizerConfig';
 
 function unused(thing: any) {}
 
@@ -41,6 +42,7 @@ interface RandomizerState {
   feedbackClue: string | null; // Which clue is showing feedback
   feedbackType: 'correct' | 'incorrect' | null;
   rewardAllocations: RewardLetter[];
+  configDialogOpen: boolean;
 }
 
 interface RandomizerGameProps {
@@ -52,6 +54,7 @@ interface RandomizerGameProps {
 type GameModel = {
   randomizerSubmitAnswer: (clueId: string, isCorrect: boolean) => {};
   randomizerGetRewards: (state: RewardsState) => {};
+  randomizerUpdateConfig: (config: RandomizerConfigJson) => {};
 };
 
 function UpdateRewards(state: RewardsState, items: any[], index: number): RewardsState | null {
@@ -87,10 +90,12 @@ class ClientHandler {
   private gameUpdateHandler: GameModel;
   private connected: boolean;
   private onConnectItemUnlock: number;
+  private config: RandomizerConfigJson;
 
-  constructor(gameUpdateHandler: GameModel) {
+  constructor(gameUpdateHandler: GameModel, config: RandomizerConfigJson) {
     const client = new Client(null);
     this.gameUpdateHandler = gameUpdateHandler;
+    this.config = config;
 
     client.items.on('itemsReceived', this.receiveditemsListener);
     client.socket.on('connected', this.connectedListener);
@@ -105,12 +110,8 @@ class ClientHandler {
     this.onConnectItemUnlock = 0;
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
 
-    //TODO config
-    const SLOT_NAME = 'Jack';
-    const ARCHIPELAGO_URL = 'localhost:38281';
-
     this.client
-      .login(ARCHIPELAGO_URL, SLOT_NAME, 'Crossword', undefined)
+      .login(config.archipelagoUrl, config.slotName, 'Crossword', undefined)
       .then(() => {
         console.log('Connected to the Archipelago server!');
         this.connected = true;
@@ -164,15 +165,16 @@ class ClientHandler {
       console.log(`sending check ${i}`);
       this.client.check(i);
 
-      //TODO config
-      const N_LOCATIONS = 100;
-
-      if (i >= N_LOCATIONS) {
+      if (i >= this.config.nLocations) {
         this.client.goal();
       }
     } else {
       this.onConnectItemUnlock = Math.max(this.onConnectItemUnlock, i);
     }
+  }
+
+  updateConfig(config: RandomizerConfigJson) {
+    this.config = config;
   }
 }
 
@@ -189,6 +191,9 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const shuffledClues = this.shuffleArray([...clues], rng);
     const rewardAllocations = this.calculateRewardAllocations(clues, rng);
 
+    // Show config dialog on first load if no config exists
+    const hasConfig = !!this.randomizerState.config;
+
     this.state = {
       clues,
       shuffledClues,
@@ -196,14 +201,24 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
       feedbackClue: null,
       feedbackType: null,
       rewardAllocations,
+      configDialogOpen: !hasConfig,
     };
   }
 
   componentDidMount() {
-    this.handler = new ClientHandler(this.props.gameModel);
+    const config = this.getConfig();
+    this.handler = new ClientHandler(this.props.gameModel, config);
   }
 
   componentDidUpdate(prevProps: RandomizerGameProps) {
+    const prevConfig = prevProps?.game?.randomizer?.config;
+    const newConfig = this.props?.game?.randomizer?.config;
+
+    // Update handler config if it changed
+    if (prevConfig !== newConfig && this.handler) {
+      this.handler.updateConfig(this.getConfig());
+    }
+
     const prevLocations = prevProps?.game?.randomizer?.nLocations || 0;
     const newLocations = this.props?.game?.randomizer?.nLocations || 0;
     for (let i = prevLocations + 1; i <= newLocations; i++) {
@@ -223,6 +238,23 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
       }
     );
   }
+
+  // Get config with defaults
+  getConfig(): RandomizerConfigJson {
+    return this.randomizerState.config || DEFAULT_RANDOMIZER_CONFIG;
+  }
+
+  handleOpenConfig = () => {
+    this.setState({configDialogOpen: true});
+  };
+
+  handleCloseConfig = () => {
+    this.setState({configDialogOpen: false});
+  };
+
+  handleSaveConfig = (config: RandomizerConfigState) => {
+    this.props.gameModel.randomizerUpdateConfig(config);
+  };
 
   // Hash a string to get a consistent seed
   hashString(str: string): number {
@@ -418,14 +450,16 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
   }
 
   render() {
-    //TODO config
-    const N_KEY_ITEMS = 20;
-    const N_NON_KEY_ITEMS = 80;
-    const MIN_STARTING_CLUES = 4;
-    const STARTING_CLUES_PROPORTION = 0.1;
-    const N_KEY_FOR_ALL_REVEAL_PROPORTION = 0.9;
+    const config = this.getConfig();
+    const {
+      nKeyItems: N_KEY_ITEMS,
+      nNonKeyItems: N_NON_KEY_ITEMS,
+      minStartingClues: MIN_STARTING_CLUES,
+      startingCluesProportion: STARTING_CLUES_PROPORTION,
+      nKeyForAllRevealProportion: N_KEY_FOR_ALL_REVEAL_PROPORTION,
+    } = config;
 
-    const {shuffledClues, answers, rewardAllocations} = this.state;
+    const {shuffledClues, answers, rewardAllocations, configDialogOpen} = this.state;
     const {solvedClues, wrongAttempts, totalWrongAttempts, rewardState} = this.randomizerState;
     console.log(`Rendering with rewardState=${JSON.stringify(rewardState)}`);
     const totalClues = shuffledClues.length;
@@ -451,8 +485,25 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
 
     return (
       <div className="randomizer-game">
+        <RandomizerConfig
+          open={configDialogOpen}
+          onClose={this.handleCloseConfig}
+          onSave={this.handleSaveConfig}
+          initialConfig={config}
+        />
         <Box className="randomizer-header" p={2}>
-          <Typography variant="h4">Crossword Randomizer</Typography>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h4">Crossword Randomizer</Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<MdSettings />}
+              onClick={this.handleOpenConfig}
+            >
+              Config
+            </Button>
+          </Box>
           <Box display="flex" style={{gap: '16px', marginTop: '16px'}}>
             <Chip label={`Solved: ${solvedCount} / ${totalClues}`} color="primary" />
             <Chip label={`Wrong Attempts: ${totalWrongAttempts}`} color="secondary" />

@@ -339,8 +339,8 @@ const reducers = {
         .map(([, value]) => (value ? 1 : 0))
         .reduce((a, b) => a + b, 0);
 
-      //TODO config
-      const N_LOCATIONS = 100;
+      // Get N_LOCATIONS from config, with default fallback
+      const N_LOCATIONS = randomizer.config?.nLocations || 100;
 
       const nLocations = Math.floor((N_LOCATIONS * nCorrectClues) / nClues);
 
@@ -390,6 +390,20 @@ const reducers = {
     }
 
     return game;
+  },
+
+  // Update randomizer config
+  randomizerUpdateConfig: (game, params) => {
+    const {config} = params;
+    let {randomizer = {}} = game;
+    randomizer = {
+      ...randomizer,
+      config,
+    };
+    return {
+      ...game,
+      randomizer,
+    };
   },
 };
 

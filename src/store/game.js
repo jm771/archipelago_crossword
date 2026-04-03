@@ -315,6 +315,14 @@ export default class Game extends EventEmitter {
     });
   }
 
+  randomizerUpdateConfig(config) {
+    this.addEvent({
+      timestamp: SERVER_TIME,
+      type: 'randomizerUpdateConfig',
+      params: {config},
+    });
+  }
+
   async initialize(rawGame, {battleData} = {}) {
     console.log('initialize');
     const {
