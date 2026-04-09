@@ -90,12 +90,11 @@ class ClientHandler {
   private gameUpdateHandler: GameModel;
   private connected: boolean;
   private onConnectItemUnlock: number;
-  private config: RandomizerConfigJson;
+  private nLocations: number;
 
-  constructor(gameUpdateHandler: GameModel, config: RandomizerConfigJson) {
+  constructor(gameUpdateHandler: GameModel, archipelagoUrl: string, slotName: string, nLocations: number) {
     const client = new Client(null);
     this.gameUpdateHandler = gameUpdateHandler;
-    this.config = config;
 
     client.items.on('itemsReceived', this.receiveditemsListener);
     client.socket.on('connected', this.connectedListener);
@@ -109,9 +108,10 @@ class ClientHandler {
     this.connected = false;
     this.onConnectItemUnlock = 0;
     this.rewardState = {sequenceNo: 0, nKey: 0, nNonKey: 0};
+    this.nLocations = nLocations;
 
     this.client
-      .login(config.archipelagoUrl, config.slotName, 'Crossword', undefined)
+      .login(archipelagoUrl, slotName, 'Crossword', undefined)
       .then(() => {
         console.log('Connected to the Archipelago server!');
         this.connected = true;
@@ -165,16 +165,12 @@ class ClientHandler {
       console.log(`sending check ${i}`);
       this.client.check(i);
 
-      if (i >= this.config.nLocations) {
+      if (i >= this.nLocations) {
         this.client.goal();
       }
     } else {
       this.onConnectItemUnlock = Math.max(this.onConnectItemUnlock, i);
     }
-  }
-
-  updateConfig(config: RandomizerConfigJson) {
-    this.config = config;
   }
 }
 
@@ -207,7 +203,12 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
 
   componentDidMount() {
     const config = this.getConfig();
-    this.handler = new ClientHandler(this.props.gameModel, config);
+    this.handler = new ClientHandler(
+      this.props.gameModel,
+      config.archipelagoUrl,
+      config.slotName,
+      config.nLocations
+    );
   }
 
   componentDidUpdate(prevProps: RandomizerGameProps) {
@@ -215,8 +216,13 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const newConfig = this.props?.game?.randomizer?.config;
 
     // Update handler config if it changed
-    if (prevConfig !== newConfig && this.handler) {
-      this.handler.updateConfig(this.getConfig());
+    if (prevConfig !== newConfig && newConfig && this.handler) {
+      this.handler = new ClientHandler(
+        this.props.gameModel,
+        newConfig.archipelagoUrl,
+        newConfig.slotName,
+        newConfig.nLocations
+      );
     }
 
     const prevLocations = prevProps?.game?.randomizer?.nLocations || 0;
@@ -412,6 +418,14 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     }
   };
 
+  handleReset = () => {
+    this.setState({
+      answers: {},
+      feedbackClue: null,
+      feedbackType: null,
+    });
+  };
+
   renderAnswerBox(clue: ClueData, revealedLetters: {[clueId: string]: number[]}) {
     const {answers, feedbackClue, feedbackType} = this.state;
     const {solvedClues} = this.randomizerState;
@@ -494,15 +508,20 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
         <Box className="randomizer-header" p={2}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h4">Crossword Randomizer</Typography>
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              startIcon={<MdSettings />}
-              onClick={this.handleOpenConfig}
-            >
-              Config
-            </Button>
+            <Box display="flex" style={{gap: '8px'}}>
+              <Button variant="outlined" color="default" size="small" onClick={this.handleReset}>
+                Reset Clues
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<MdSettings />}
+                onClick={this.handleOpenConfig}
+              >
+                Config
+              </Button>
+            </Box>
           </Box>
           <Box display="flex" style={{gap: '16px', marginTop: '16px'}}>
             <Chip label={`Solved: ${solvedCount} / ${totalClues}`} color="primary" />
