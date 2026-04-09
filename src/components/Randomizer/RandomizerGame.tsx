@@ -187,7 +187,9 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
     const shuffledClues = this.shuffleArray([...clues], rng);
     const rewardAllocations = this.calculateRewardAllocations(clues, rng);
 
-    // Show config dialog on first load if no config exists
+    // Check URL params for openConfig flag (used when navigating from mode selection)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldOpenConfig = urlParams.get('openConfig') === '1';
     const hasConfig = !!this.randomizerState.config;
 
     this.state = {
@@ -197,11 +199,20 @@ export default class RandomizerGame extends Component<RandomizerGameProps, Rando
       feedbackClue: null,
       feedbackType: null,
       rewardAllocations,
-      configDialogOpen: !hasConfig,
+      configDialogOpen: shouldOpenConfig && !hasConfig,
     };
   }
 
   componentDidMount() {
+    // Remove openConfig param from URL so refresh doesn't reopen dialog
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('openConfig')) {
+      urlParams.delete('openConfig');
+      const newSearch = urlParams.toString();
+      const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+
     const config = this.getConfig();
     this.handler = new ClientHandler(
       this.props.gameModel,

@@ -43,6 +43,8 @@ const ModeSelectionDialog: React.FC<ModeSelectionDialogProps> = ({open, onClose,
 
     if (mode === 'randomizer') {
       params.append('mode', 'randomizer');
+      // Add a URL param to open config on first navigation
+      params.append('openConfig', '1');
     }
 
     const queryString = params.toString();

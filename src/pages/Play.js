@@ -72,7 +72,12 @@ export default class Play extends Component {
 
       // Add randomizer mode to the redirect URL if present
       if (this.is_randomizer && v2) {
-        href += '?mode=randomizer';
+        const params = new URLSearchParams();
+        params.append('mode', 'randomizer');
+        if (this.query.openConfig) {
+          params.append('openConfig', '1');
+        }
+        href += '?' + params.toString();
       }
 
       if (games.length > 1) {
@@ -112,7 +117,12 @@ export default class Play extends Component {
       });
       let href = this.is_fencing ? `/fencing/${gid}` : `/beta/game/${gid}`;
       if (this.is_randomizer) {
-        href += '?mode=randomizer';
+        const params = new URLSearchParams();
+        params.append('mode', 'randomizer');
+        if (this.query.openConfig) {
+          params.append('openConfig', '1');
+        }
+        href += '?' + params.toString();
       }
       redirect(href);
     });
